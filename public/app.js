@@ -14,21 +14,53 @@ function main() {
 		ctx.canvas.height = window.innerHeight - yPadding
 
 		canvasTools.paintBackground(ctx, '#073642', ctx.canvas.width, ctx.canvas.height)
-		
-		let pad = squiggle.createScratchPadCanvas(canvas, ctx, 'white', 3, '#073642')
+
+		let pad = squiggle.createScratchPadCanvas(ctx, 'white', 3, '#073642')
 		pad.properties.autoSmoothing = true
+
 		socket.emit('IjustJoined')
 
-		socket.on('strokesSoFar',(strokes) => {
+		socket.on('strokesSoFar', (strokes) => {
 			console.log('strokeSoFar')
 			pad.properties.strokes = [...strokes]
 			pad.redrawStrokes()
 		})
 
+		//for mouse devices
+		canvas.addEventListener('mousedown', (event) => {
+			pad.events.publish('drawingStarted')
+		})
+		canvas.addEventListener('mousemove', (event) => {
+			pad.events.publish('penMoved', canvasTools.getCanvasPosition(canvas, event))
+		})
+
+		canvas.addEventListener('mouseup', (event) => {
+			pad.events.publish('drawingStopped')
+		})
+
+		//for touch devices
+		canvas.addEventListener('touchstart', (event) => {
+			pad.events.publish('drawingStarted')
+		})
+
+		canvas.addEventListener('touchmove', (touchEvent) => {
+			pad.events.publish('penMoved',
+				canvasTools.getCanvasPosition(canvas, { x: touchEvent.touches[0].clientX, y: touchEvent.touches[0].clientY })
+			)
+			console.log('touchmove', touchEvent)
+		})
+
+		canvas.addEventListener('touchend', (event) => {
+			pad.events.publish('drawingStopped')
+			console.log('touchend', event)
+		})
+
+		//socket will ask others to add this stroke to their strokes
 		pad.events.subscribe('strokeAdded', (points) => {
 			socket.emit('addThisStroke', points);
 		})
 
+		//redraw strokes to clear the drawn stroke for auto smoothing
 		pad.events.subscribe('redraw', () => {
 			pad.redrawStrokes()
 			socket.emit('redrawYourStrokes')
@@ -40,17 +72,7 @@ function main() {
 
 		socket.on('redrawYourStrokes', () => {
 			pad.redrawStrokes()
-		} )
-		// pen1.update()
-		// pen1.write()
-
-		// if (mouseCoordsGlobal) {
-		// 	canvasTools.setCanvasFont(ctx, { font: 'Fira Mono', color: 'black', size: '10' })
-		// 	ctx.fillText(`x:${mouseCoordsGlobal[0]}, y:${mouseCoordsGlobal[1]}`, mouseCoordsGlobal[0], mouseCoordsGlobal[1])
-		// }
-		// 	window.requestAnimationFrame(animationLoop)
-		// }
-		// animationLoop()
+		})
 	}
 }
 window.addEventListener('load', main)

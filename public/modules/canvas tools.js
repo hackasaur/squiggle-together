@@ -7,6 +7,13 @@ export const createPointObject = (x, y) => {
     return {'x': x, 'y': y}
 }
 
+export function getCanvasPosition(canvas, pen) {
+    let pos = {}
+    pos.x = pen.x - canvas.offsetLeft;
+    pos.y = pen.y - canvas.offsetTop;
+    return pos
+}
+
 export const setCanvasFont = (ctx, font) => {
     ctx.fillStyle = `${font.color}`
     ctx.font = `${font.size}px ${font.font}`

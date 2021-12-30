@@ -30,12 +30,12 @@ io.on('connection', (socket) => {
 
   socket.on('addThisStroke', (points) => {
     // console.log('message: ' + msg);
-    io.emit('addThisStroke', points)
+    socket.broadcast.emit('addThisStroke', points)
     strokes.push(points)
   });
 
   socket.on('redrawYourStrokes', (strokes) => {
-    io.emit('redrawYourStrokes')
+    socket.broadcast.emit('redrawYourStrokes')
   })
 });
 

@@ -1,16 +1,7 @@
 import * as bezier from './bezier.js'
 import * as canvasTools from './canvas tools.js'
 
-let mousePressed = false
-
-export function getMousePosition(canvas, mouseEvent) {
-    let pos = {}
-    pos.x = mouseEvent.x - canvas.offsetLeft;
-    pos.y = mouseEvent.y - canvas.offsetTop;
-    return pos
-}
-
-export function mouseDraw(ctx, color, lineWidth, prevPosition, position) {
+export function drawOnCanvas(ctx, color, lineWidth, prevPosition, position) {
     ctx.beginPath(); // begin
     ctx.lineWidth = lineWidth;
     ctx.lineCap = 'round';
@@ -50,14 +41,13 @@ const drawFromPoints = (ctx, pointsArray, color = 'white', lineWidth) => {
     ctx.closePath()
 }
 
-
 const pubSub = (events) => {
     let eventCallbacks = {}
-    
+
     for (let event of events) {
         eventCallbacks[event] = []
     }
-    
+
     return {
         subscribe: (eventName, callback) => {
             eventCallbacks[eventName].push(callback)
@@ -82,7 +72,7 @@ const pubSub = (events) => {
     }
 }
 
-export const createScratchPadCanvas = (canvas, ctx, strokeColor = 'white', strokeWidth = '3', backgroundColor = 'black') => {
+export const createScratchPadCanvas = (ctx, strokeColor = 'white', strokeWidth = '3', backgroundColor = 'black') => {
     let properties = {
         strokeColor: strokeColor,
         strokeWidth: strokeWidth,
@@ -91,7 +81,7 @@ export const createScratchPadCanvas = (canvas, ctx, strokeColor = 'white', strok
         backgroundColor: backgroundColor,
         strokes: []
     }
-    
+
     const redrawStrokes = () => {
         canvasTools.paintBackground(ctx, properties.backgroundColor, ctx.canvas.width, ctx.canvas.height)
         for (let stroke of properties.strokes) {
@@ -99,31 +89,34 @@ export const createScratchPadCanvas = (canvas, ctx, strokeColor = 'white', strok
         }
     }
 
+    let isDrawing = false
     let prevPosition, currentPosistion
     let stroke = []
-    let mousePressed = false
     let refreshStrokes = false
-    let events = pubSub(['strokeAdded', 'drawing', 'redraw'])
+    let events = pubSub(['strokeAdded', 'penMoved', 'drawingStarted', 'drawingStopped', 'redraw'])
 
-    canvas.addEventListener('mousedown', () => {
-        mousePressed = true
-    })
+    // canvas.addEventListener('mousedown', () => {
+    //     writing = true
+    // })
 
-    canvas.addEventListener('mousemove', (event) => {
-        if (mousePressed) {
-            events.publish('drawing', [event.x - canvas.offsetLeft, event.y - canvas.offsetTop])
-            stroke.push([event.x - canvas.offsetLeft, event.y - canvas.offsetTop])
-            currentPosistion = getMousePosition(canvas, event)
+    // stroke.push([event.x - canvas.offsetLeft, event.y - canvas.offsetTop])
+    const draw = (penCoords) => {
+        if (isDrawing) {
+            stroke.push([penCoords.x, penCoords.y])
+            currentPosistion = { x: penCoords.x, y: penCoords.y }
             if (prevPosition !== undefined) {
-                mouseDraw(ctx, properties.strokeColor, properties.strokeWidth, prevPosition, currentPosistion)
+                drawOnCanvas(ctx, properties.strokeColor, properties.strokeWidth, prevPosition, currentPosistion)
             }
-            prevPosition = getMousePosition(canvas, event)
+            prevPosition = { x: penCoords.x, y: penCoords.y }
         }
-    })
+    }
 
+    events.subscribe('penMoved', draw)
+    events.subscribe('drawingStarted', () => {isDrawing = true})
 
-    canvas.addEventListener('mouseup', (event) => {
-        mousePressed = false
+    // canvas.addEventListener('mouseup', (event) => {
+    const penLifted = () => {
+        isDrawing = false
         prevPosition = undefined
         if (properties.autoSmoothing) {
             //clear the stroke
@@ -144,8 +137,9 @@ export const createScratchPadCanvas = (canvas, ctx, strokeColor = 'white', strok
         if (refreshStrokes) {
             events.publish('redraw')
         }
+    }
 
-    })
+    events.subscribe('drawingStopped', penLifted)
 
     return {
         properties,
