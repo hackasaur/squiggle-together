@@ -1,0 +1,23 @@
+{
+  "name": "squigle-together",
+  "version": "1.0.0",
+  "description": "squiggle together!",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/hackasaur/squiggly-pad-together.git"
+  },
+  "author": "hackasaur",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/hackasaur/squiggly-pad-together/issues"
+  },
+  "homepage": "https://github.com/hackasaur/squiggly-pad-together#readme",
+  "dependencies": {
+    "express": "^4.17.2",
+    "socket.io": "^4.4.0"
+  }
+}
